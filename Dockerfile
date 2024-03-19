@@ -15,4 +15,4 @@ COPY . .
 RUN python -m playwright install
 
 # Run the Flask app
-CMD ["python", "main.py"]
+CMD ["python", "app.py"]
