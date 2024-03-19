@@ -1,5 +1,5 @@
 # Use the official Google Chrome base image
-FROM docker.io/render/chromium:103.0.5060.134
+FROM chromium/chrome:latest
 
 # Set the working directory
 WORKDIR /app
