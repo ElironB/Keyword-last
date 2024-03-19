@@ -22,5 +22,8 @@ COPY . /app
 # Document that the service listens on port 5000.
 EXPOSE 5000
 
+# Set the FLASK_APP environment variable
+ENV FLASK_APP=app.py
+
 # Run the Flask application
-CMD ["python3", "app.py"]
+CMD ["flask", "run", "--host=0.0.0.0"]
