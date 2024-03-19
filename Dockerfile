@@ -1,20 +1,23 @@
-# Use an official Python runtime as a parent image
-FROM python:3.8-slim
+# Use the official Selenium Chrome standalone image as the base
+FROM selenium/standalone-chrome:latest
+
+# Switch to root to install additional dependencies
+USER root
+
+# Install Python and pip
+RUN apt-get update && apt-get install -y python3 python3-pip
 
 # Set the working directory in the container
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Copy the current directory contents into the container at /usr/src/app
-COPY . .
+# Copy the requirements.txt file into the container
+COPY requirements.txt /app/
 
-# Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies from requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt
 
-# Make port 5000 available to the world outside this container
-EXPOSE 5000
+# Copy the rest of the application into the container
+COPY . /app
 
-# Define environment variable
-ENV FLASK_APP=app.py
-
-# Run app.py when the container launches
-CMD ["flask", "run", "--host=0.0.0.0"]
+# Run the Flask application
+CMD ["python3", "app.py"]
