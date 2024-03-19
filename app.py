@@ -1,10 +1,6 @@
 from flask import Flask, jsonify, request
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
+from playwright.sync_api import sync_playwright
+import os
 
 app = Flask(__name__)
 
@@ -13,56 +9,47 @@ def get_keyword_results():
     keyword = request.args.get('keyword')
     url = f'https://tools.wordstream.com/fkt?website={keyword}'
 
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--disable-images")
-    chrome_options.add_argument("--no-sandbox")  # This make Chromium reachable
-    chrome_options.add_argument("--disable-dev-shm-usage")  # overcome limited resource problems
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        page.goto(url, wait_until="networkidle")
 
-    # Initialize the Chrome driver
-    driver = webdriver.Chrome(service=webdriver.chrome.service.Service(ChromeDriverManager().install()), options=chrome_options)
-    driver.get(url)
+        try:
+            page.click("#refine-continue")
+            print("Button Clicked")
 
-    try:
-        # Click the 'Continue' button
-        continue_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.ID, 'refine-continue'))
-        )
-        continue_button.click()
-        
-        # Debugging: Save a screenshot after clicking 'Continue'
-        driver.save_screenshot('debug1_screenshot.png')
+            page.wait_for_selector('table.sc-bTmccw.cFltLW.MuiTable-root', timeout=20000)
+            page.wait_for_selector('p.sc-bczRLJ.jDmpHO.MuiTypography-root', state='hidden', timeout=20000)
+            print("Table Loaded")
 
-        # Wait for the table to load and ensure a specific element is not present anymore
-        WebDriverWait(driver, 20).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, 'table.sc-bTmccw.cFltLW.MuiTable-root'))
-        )
-        WebDriverWait(driver, 20).until_not(
-            EC.presence_of_element_located((By.CSS_SELECTOR, 'p.sc-bczRLJ.jDmpHO.MuiTypography-root'))
-        )
+            table_data = []
+            rows = page.query_selector_all('tbody.sc-hQRsPl.hkwLLR.MuiTableBody-root tr')
+            for row in rows:
+                cols = row.query_selector_all('th, td')
+                row_data = {
+                    "keyword": cols[0].inner_text(),
+                    "search_volume": cols[1].inner_text(),
+                    "cpc_low": cols[2].inner_text(),
+                    "cpc_high": cols[3].inner_text(),
+                    "competition": cols[4].inner_text()
+                }
+                table_data.append(row_data)
 
-        # Extract data from the table
-        table_data = []
-        rows = driver.find_elements(By.CSS_SELECTOR, 'tbody.sc-hQRsPl.hkwLLR.MuiTableBody-root tr')
-        for row in rows:
-            cols = row.find_elements(By.CSS_SELECTOR, 'th, td')
-            row_data = {
-                'keyword': cols[0].text,
-                'search_volume': cols[1].text,
-                'cpc_low': cols[2].text,
-                'cpc_high': cols[3].text,
-                'competition': cols[4].text
-            }
-            table_data.append(row_data)
-        return jsonify(table_data)
-        
-    except Exception as e:
-        driver.save_screenshot('error_screenshot.png')  # Save a screenshot for debugging
-        return jsonify({'error': str(e)}), 500
+            if table_data:
+                return jsonify(table_data)
+            else:
+                return jsonify({'Failed to extract data :('}), 500
 
-    finally:
-        driver.quit()
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+        finally:
+            browser.close()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Set the FLASK_ENV environment variable to 'development' to enable debug mode
+    env = os.environ.get('FLASK_ENV', 'production')
+    if env == 'development':
+        app.run(debug=True, host='0.0.0.0')
+    else:
+        app.run(host='0.0.0.0')
