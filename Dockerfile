@@ -1,13 +1,10 @@
-# Use the official Python base image
+# Use the official Debian base image
 FROM debian:bullseye-slim
 
 # Set the working directory
 WORKDIR /app
 
-# Copy the requirements file
-COPY requirements.txt .
-
-# Install the Python dependencies and required system packages
+# Install system dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         ca-certificates \
@@ -45,15 +42,23 @@ RUN apt-get update && \
         libxtst6 \
         wget \
         xdg-utils \
-    && rm -rf /var/lib/apt/lists/* && \
-    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-    sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' && \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Google Chrome
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list && \
     apt-get update && \
     apt-get install -y google-chrome-stable && \
     rm -rf /var/lib/apt/lists/*
 
-# Install the Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy the requirements file
+COPY requirements.txt .
+
+# Install Python and the required packages
+RUN apt-get update && \
+    apt-get install -y python3 python3-pip && \
+    pip3 install --no-cache-dir -r requirements.txt && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy the application code
 COPY . .
