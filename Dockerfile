@@ -15,5 +15,8 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 # Copy the rest of the application
 COPY . .
 
+# Define environment variable
+ENV FLASK_APP=app.py
+
 # Run the Flask app
 CMD ["python3", "main.py"]
