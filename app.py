@@ -47,4 +47,4 @@ def get_keyword_results():
         return jsonify({'message': 'Failed to extract data'}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    app.run(host='0.0.0.0')
