@@ -20,7 +20,19 @@ def get_keyword_results():
     chrome_options.add_argument("--disable-dev-shm-usage")  # overcome limited resource problems
     
     keyword = request.args.get('keyword')
-    url = f'https://tools.wordstream.com/fkt?website={keyword}'
+    url = f'https://tools.wordstream.com/fkt?website={keyword}' 
+    
+    try:
+        # Attempt to use the ChromeDriverManager to get the ChromeDriver
+        service = Service(ChromeDriverManager().install())
+    except ValueError as e:
+        print(f"Error getting latest ChromeDriver: {e}")
+        # Specify a fallback version of ChromeDriver if the latest fails
+        service = Service(ChromeDriverManager("2.46").install())
+
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    driver.get(url)
+    
 
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
     driver.get(url)
