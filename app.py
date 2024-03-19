@@ -14,13 +14,14 @@ def get_keyword_results():
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--disable-images")
     chrome_options.add_argument("--no-sandbox")  # This make Chromium reachable
     chrome_options.add_argument("--disable-dev-shm-usage")  # overcome limited resource problems
     
     keyword = request.args.get('keyword')
     url = f'https://tools.wordstream.com/fkt?website={keyword}'
 
-    driver = webdriver.Chrome(options=chrome_options)
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
     driver.get(url)
 
     try:
