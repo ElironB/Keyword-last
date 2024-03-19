@@ -1,6 +1,5 @@
 from flask import Flask, jsonify, request
 from playwright.sync_api import sync_playwright
-import os
 
 app = Flask(__name__)
 
@@ -8,6 +7,7 @@ app = Flask(__name__)
 def get_keyword_results():
     keyword = request.args.get('keyword')
     url = f'https://tools.wordstream.com/fkt?website={keyword}'
+    table_data = []  # Initialize outside try-except
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -22,7 +22,6 @@ def get_keyword_results():
             page.wait_for_selector('p.sc-bczRLJ.jDmpHO.MuiTypography-root', state='hidden', timeout=20000)
             print("Table Loaded")
 
-            table_data = []
             rows = page.query_selector_all('tbody.sc-hQRsPl.hkwLLR.MuiTableBody-root tr')
             for row in rows:
                 cols = row.query_selector_all('th, td')
@@ -35,21 +34,17 @@ def get_keyword_results():
                 }
                 table_data.append(row_data)
 
-            if table_data:
-                return jsonify(table_data)
-            else:
-                return jsonify({'Failed to extract data :('}), 500
-
         except Exception as e:
+            print(f"Error: {str(e)}")
             return jsonify({'error': str(e)}), 500
 
         finally:
             browser.close()
 
-if __name__ == '__main__':
-    # Set the FLASK_ENV environment variable to 'development' to enable debug mode
-    env = os.environ.get('FLASK_ENV', 'production')
-    if env == 'development':
-        app.run(debug=True, host='0.0.0.0')
+    if table_data:
+        return jsonify(table_data)
     else:
-        app.run(host='0.0.0.0')
+        return jsonify({'message': 'Failed to extract data'}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0')
