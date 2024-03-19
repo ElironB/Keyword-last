@@ -19,5 +19,8 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 # Copy the rest of the application into the container
 COPY . /app
 
+# Document that the service listens on port 5000.
+EXPOSE 5000
+
 # Run the Flask application
 CMD ["python3", "app.py"]
